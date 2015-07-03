@@ -79,13 +79,15 @@ class Grid:CCNodeColor {
     func spawnRandomTile() {
         var spawned = false;
         while !spawned {
-            let randomRow = Int(CCRANDOM_0_1() * Float(self.gridSize))
-            let randomColumn = Int(CCRANDOM_0_1() * Float(self.gridSize))
-            let positionFree = self.gridArray[randomColumn][randomRow] == self.noTile
+            //let randomRow = Int(CCRANDOM_0_1() * Float(self.gridSize));
+            //let randomColumn = Int(CCRANDOM_0_1() * Float(self.gridSize));
+            let randomRow = Int(arc4random_uniform(UInt32(self.gridSize)));
+            let randomColumn = Int(arc4random_uniform(UInt32(self.gridSize)));
+            let positionFree = (self.gridArray[randomColumn][randomRow] == self.noTile);
             
             if positionFree {
-                self.addTileAtColumn(randomColumn, row: randomRow)
-                spawned = true
+                self.addTileAtColumn(randomColumn, row: randomRow);
+                spawned = true;
             }
         }
     }
@@ -98,26 +100,118 @@ class Grid:CCNodeColor {
         }
     }
     
+    // returns 'true' if the index is inside the grid and 'false' otherwise.
+    func indexValid(x: Int, y: Int) -> Bool {
+        var indexValid = true;
+        indexValid = (x >= 0) && (y >= 0);
+        if indexValid {
+            indexValid = x < Int(self.gridArray.count);
+            if indexValid {
+                indexValid = y < Int(self.gridArray[x].count);
+            }
+        }
+        return indexValid;
+    }
+    
+    // returns 'true' if the index is inside the grid/does not contain a Tile object and 'false' otherwise.
+    func indexValidAndUnoccupied(x: Int, y: Int) -> Bool {
+        var indexValid = self.indexValid(x, y: y);
+        if !indexValid {
+            return false;
+        }
+        // unoccupied?
+        return self.gridArray[x][y] == self.noTile;
+    }
+    
+    // receives the Tile instance to be moved, its starting point and its finish point.
+    func moveTile(tile: Tile, fromX: Int, fromY: Int, toX: Int, toY: Int) {
+        
+        self.gridArray[toX][toY] = self.gridArray[fromX][fromY]; // adds tile to new index
+        self.gridArray[fromX][fromY] = self.noTile;// removes tile from old index
+        
+        var newPosition = self.positionForColumn(toX, row: toY); // gets a CGPoint for new index
+        var moveTo = CCActionMoveTo(duration: 0.2, position: newPosition); // sets action
+        tile.runAction(moveTo); // runs the action which will position tile in a new location
+    }
+    
+    
     /* iOS methods */
     
+    /****** SWIPE METHODS *****/
     // swipe-related methods below are not iOS native, however, they use a lot of iOS components and therefore its classification as so is convenient.
     
-    // actions to be called at each swipe; to be implemented
+    
+    // actual implementation of movement. Called at each swipe, with varying directions.
+    func move(direction: CGPoint) {
+        // apply negative vector until reaching boundary, this way we get the tile that is further away
+        // bottom left corner
+        var currentX = 0;
+        var currentY = 0;
+        // Move to relevant edge by applying direction until reaching border
+        while self.indexValidAndUnoccupied(currentX, y: currentY) {
+            var newX = currentX + Int(direction.x);
+            var newY = currentY + Int(direction.y);
+            if self.indexValidAndUnoccupied(newX, y: newY) {
+            //if self.indexValid(newX, y: newY) {
+                currentX = newX;
+                currentY = newY;
+            } else {
+                break;
+            }
+        }
+        // store initial row value to reset after completing each column
+        var initialY = currentY;
+        // define changing of x and y value (moving left, up, down or right?)
+        var xChange = Int(-direction.x);
+        var yChange = Int(-direction.y);
+        if xChange == 0 {
+            xChange = 1;
+        }
+        if yChange == 0 {
+            yChange = 1;
+        }
+        // visit column for column
+        while self.indexValid(currentX, y: currentY) {
+            while self.indexValid(currentX, y: currentY) {
+                // get tile at current index
+                if let tile = gridArray[currentX][currentY] {
+                    // if tile exists at index
+                    var newX = currentX;
+                    var newY = currentY;
+                    // find the farthest position by iterating in direction of the vector until reaching boarding of
+                    // grid or occupied cell
+                    while self.indexValid(newX+Int(direction.x), y: newY+Int(direction.y)) {
+                        newX += Int(direction.x);
+                        newY += Int(direction.y);
+                    }
+                    if newX != currentX || newY != currentY {
+                        self.moveTile(tile, fromX: currentX, fromY: currentY, toX: newX, toY: newY);
+                    }
+                }
+                // move further in this column
+                currentY += yChange;
+            }
+            currentX += xChange;
+            currentY = initialY;
+        }
+    }
+    
+    // actions to be called at each swipe;
     
     func swipeLeft() { // to be implemented
-        println("Left swipe!");
+        self.move(CGPoint(x: -1, y: 0));
     }
     
     func swipeRight() { // to be implemented
-        println("Right swipe!");
+        self.move(CGPoint(x: 1, y: 0));
     }
     
     func swipeUp() { // to be implemented
-        println("Up swipe!");
+        self.move(CGPoint(x: 0, y: 1));
     }
     
     func swipeDown() { // to be implemented
-        println("Down swipe!");
+        self.move(CGPoint(x: 0, y: -1));
     }
     
     // sets up actions to be triggered once a swipe is detected in a given direction.
@@ -139,6 +233,7 @@ class Grid:CCNodeColor {
         swipeDown.direction = .Down;
         CCDirector.sharedDirector().view.addGestureRecognizer(swipeDown);
     }
+    /***** END OF SWIPE METHODS *****/
     
     
     /* cocos2d methods */
