@@ -10,5 +10,5 @@ class MainScene: CCNode {
     weak var scoreLabel:CCLabelTTF!;
     
     // display max user score
-    weak var highscoreLabel:CCLabelTTF!;
+    weak var highScoreLabel:CCLabelTTF!;
 }
