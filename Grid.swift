@@ -98,6 +98,49 @@ class Grid:CCNodeColor {
         }
     }
     
+    /* iOS methods */
+    
+    // swipe-related methods below are not iOS native, however, they use a lot of iOS components and therefore its classification as so is convenient.
+    
+    // actions to be called at each swipe; to be implemented
+    
+    func swipeLeft() { // to be implemented
+        println("Left swipe!");
+    }
+    
+    func swipeRight() { // to be implemented
+        println("Right swipe!");
+    }
+    
+    func swipeUp() { // to be implemented
+        println("Up swipe!");
+    }
+    
+    func swipeDown() { // to be implemented
+        println("Down swipe!");
+    }
+    
+    // sets up actions to be triggered once a swipe is detected in a given direction.
+    // adds 4 listeners for swipes (for up, down, left and right directions); gesture recognizers are added to a UIView. The main UIView in a Cocos2d app is the OpenGL view used to render the entire content of the Cocos2d app. This UIView is accessed through the '.view' property of CCDirector; the UISwipeGestureRecognizer allows a specific swipe direction to be associated with a specific method.
+    func setupGestures() {
+        var swipeLeft = UISwipeGestureRecognizer(target: self, action: "swipeLeft");
+        swipeLeft.direction = .Left;
+        CCDirector.sharedDirector().view.addGestureRecognizer(swipeLeft);
+        
+        var swipeRight = UISwipeGestureRecognizer(target: self, action: "swipeRight");
+        swipeRight.direction = .Right;
+        CCDirector.sharedDirector().view.addGestureRecognizer(swipeRight);
+        
+        var swipeUp = UISwipeGestureRecognizer(target: self, action: "swipeUp");
+        swipeUp.direction = .Up;
+        CCDirector.sharedDirector().view.addGestureRecognizer(swipeUp);
+        
+        var swipeDown = UISwipeGestureRecognizer(target: self, action: "swipeDown");
+        swipeDown.direction = .Down;
+        CCDirector.sharedDirector().view.addGestureRecognizer(swipeDown);
+    }
+    
+    
     /* cocos2d methods */
     
     // run when object is loaded into scene; will set up grid and then add objects
@@ -112,7 +155,8 @@ class Grid:CCNodeColor {
             self.gridArray.append(column); // adds the past array to the final array
         }
         
-        self.spawnStartTiles();
+        self.spawnStartTiles(); // adds tiles to spaces set to display one
+        self.setupGestures(); // associates each gesture detected with a specific action
     }
     
 }
