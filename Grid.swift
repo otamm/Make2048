@@ -130,16 +130,39 @@ class Grid:CCNodeColor {
         self.gridArray[fromX][fromY] = self.noTile;// removes tile from old index
         
         var newPosition = self.positionForColumn(toX, row: toY); // gets a CGPoint for new index
-        var moveTo = CCActionMoveTo(duration: 0.2, position: newPosition); // sets action
-        tile.runAction(moveTo); // runs the action which will position tile in a new location
+        var moveTo = CCActionMoveTo(duration: 0.2, position: newPosition); // sets animation (tile moving from old index to new index)
+        tile.runAction(moveTo); // runs animation for moving tile
     }
     
+    // if two tiles' indexes are the same, merge them into a single tile with index being equal to the sum of the two equal indexes.
+    func mergeTilesAtindex(x: Int, y: Int, withTileAtIndex otherX: Int, y otherY: Int) {
+        // Update game data
+        var mergedTile = self.gridArray[x][y]!; // sets tile at position [x][y] as the one to occupied by the result of the merge        
+        var otherTile = self.gridArray[otherX][otherY]!; // sets tile which will be combined with the new tile
+        
+        self.gridArray[x][y] = self.noTile; // excludes tile that is currently at position [x][y], since this position will be occupied for a tile with a label 2x its value
+        
+        // Update the UI
+        var otherTilePosition = self.positionForColumn(otherX, row: otherY); // gets the CGPoint for the tile which will move;
+        var moveTo = CCActionMoveTo(duration:0.2, position: otherTilePosition); // sets up animation for movement of moving tile from its current position to its final position, with a time of 0.2 seconds.
+        var remove = CCActionRemove(); // removes tile that will give place to mergedTitle; last action to be executed in a sequence which will be passed to mergedTitle.
+        
+        var mergeTile = CCActionCallBlock(block: { () -> Void in
+            otherTile.value *= 2
+        }); // sets a closure which will update the tile's current value to 2*(tile's current value);
+        /*var checkWin = CCActionCallBlock(block: { () -> Void in
+            if otherTile.value == self.winTile {self.win()}
+        });*/
+        //sets up a sequence of actions to be executed;
+        //var sequence = CCActionSequence(array: [moveTo, mergeTile, checkWin, remove]);
+        var sequence = CCActionSequence(array: [moveTo, mergeTile, remove]);
+        mergedTile.runAction(sequence); // runs the sequence of actions at the tile currently positioned at the index which will give place to the merged tile
+    }
     
     /* iOS methods */
     
     /****** SWIPE METHODS *****/
     // swipe-related methods below are not iOS native, however, they use a lot of iOS components and therefore its classification as so is convenient.
-    
     
     // actual implementation of movement. Called at each swipe, with varying directions.
     func move(direction: CGPoint) {
@@ -148,10 +171,10 @@ class Grid:CCNodeColor {
         var currentX = 0;
         var currentY = 0;
         // Move to relevant edge by applying direction until reaching border
-        while self.indexValidAndUnoccupied(currentX, y: currentY) {
+        while self.indexValid(currentX, y: currentY) {
             var newX = currentX + Int(direction.x);
             var newY = currentY + Int(direction.y);
-            if self.indexValidAndUnoccupied(newX, y: newY) {
+            if self.indexValid(newX, y: newY) {
             //if self.indexValid(newX, y: newY) {
                 currentX = newX;
                 currentY = newY;
@@ -180,12 +203,36 @@ class Grid:CCNodeColor {
                     var newY = currentY;
                     // find the farthest position by iterating in direction of the vector until reaching boarding of
                     // grid or occupied cell
-                    while self.indexValid(newX+Int(direction.x), y: newY+Int(direction.y)) {
+                    while self.indexValidAndUnoccupied(newX+Int(direction.x), y: newY+Int(direction.y)) {
                         newX += Int(direction.x);
                         newY += Int(direction.y);
                     }
-                    if newX != currentX || newY != currentY {
-                        self.moveTile(tile, fromX: currentX, fromY: currentY, toX: newX, toY: newY);
+                    var performMove = false
+                    // If we stopped moving in vector direction, but next index in vector direction is valid, this
+                    // means the cell is occupied. Let's check if we can merge them...
+                    if self.indexValid(newX+Int(direction.x), y: newY+Int(direction.y)) {
+                        // get the other tile
+                        var otherTileX = newX + Int(direction.x);
+                        var otherTileY = newY + Int(direction.y);
+                        if let otherTile = self.gridArray[otherTileX][otherTileY] {
+                            // compare the value of other tile and also check if the other tile has been merged this round
+                            if (tile.value == otherTile.value) {
+                                self.mergeTilesAtindex(currentX, y: currentY, withTileAtIndex: otherTileX, y: otherTileY);
+                            } else {
+                                // we cannot merge so we want to perform a move
+                                performMove = true;
+                            }
+                        }
+                    } else {
+                        // we cannot merge so we want to perform a move
+                        performMove = true;
+                    }
+                    if performMove {
+                        // move tile to furthest position
+                        if newX != currentX || newY != currentY {
+                            // only move tile if position changed
+                            self.moveTile(tile, fromX: currentX, fromY: currentY, toX: newX, toY: newY);
+                        }
                     }
                 }
                 // move further in this column
