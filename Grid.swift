@@ -14,6 +14,13 @@ class Grid:CCNodeColor {
     var gridArray = [[Tile?]]();
     var noTile:Tile? = nil;
     let gridSize = 4;
+    //keeps track of current score for this game session. Incremented at each merge with the label value of the tile produced from the merge. Automatically updates MainScene's scoreLabel when a new value is set.
+    var score:Int = 0 {
+        didSet {
+            var mainScene = self.parent as! MainScene;
+            mainScene.scoreLabel.string = "\(self.score)";
+        }
+    }
     // number of initial tiles when game is launched
     let startTiles = 2;
     var columnWidth: CGFloat = 0;
@@ -150,6 +157,7 @@ class Grid:CCNodeColor {
         var mergeTile = CCActionCallBlock(block: { () -> Void in
             otherTile.value *= 2;
             otherTile.mergedThisRound = true; // indicates that otherTile was produced from a merge.
+            self.score += otherTile.value;
         }); // sets a closure which will update the tile's current value to 2*(tile's current value);
         /*var checkWin = CCActionCallBlock(block: { () -> Void in
             if otherTile.value == self.winTile {self.win()}
