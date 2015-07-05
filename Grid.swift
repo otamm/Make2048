@@ -166,6 +166,7 @@ class Grid:CCNodeColor {
     
     // actual implementation of movement. Called at each swipe, with varying directions.
     func move(direction: CGPoint) {
+        var movedTilesThisRound = false; // if any tile has effectively moved, a new tile must be spawned.
         // apply negative vector until reaching boundary, this way we get the tile that is further away
         // bottom left corner
         var currentX = 0;
@@ -218,6 +219,7 @@ class Grid:CCNodeColor {
                             // compare the value of other tile and also check if the other tile has been merged this round
                             if (tile.value == otherTile.value) {
                                 self.mergeTilesAtindex(currentX, y: currentY, withTileAtIndex: otherTileX, y: otherTileY);
+                                movedTilesThisRound = true; // will spawn other tile
                             } else {
                                 // we cannot merge so we want to perform a move
                                 performMove = true;
@@ -232,6 +234,7 @@ class Grid:CCNodeColor {
                         if newX != currentX || newY != currentY {
                             // only move tile if position changed
                             self.moveTile(tile, fromX: currentX, fromY: currentY, toX: newX, toY: newY);
+                            movedTilesThisRound = true; // will spawn other tile
                         }
                     }
                 }
@@ -240,6 +243,10 @@ class Grid:CCNodeColor {
             }
             currentX += xChange;
             currentY = initialY;
+        }
+        // if any movement resulted from the swipe, a random tile is spawned at a random unnocupied location.
+        if (movedTilesThisRound) {
+            self.spawnRandomTile();
         }
     }
     
