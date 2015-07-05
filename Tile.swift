@@ -17,11 +17,16 @@ class Tile:CCNode {
     weak var backgroundNode:CCNodeColor!;
     
     /* custom variables */
+    
+    // label value. Will be set to 0 by default, however, will be randomly set to 2 or 4 once spawned.
     var value: Int = 0 {
         didSet {
             self.valueLabel.string = "\(self.value)";
         }
     }
+    
+    // keeps track of wheter or not the tile was spawned from a merge. Avoids an undesired chain of merged tiles merging again. 
+    var mergedThisRound = false;
     
     /* cocos2d methods */
     func didLoadFromCCB() {

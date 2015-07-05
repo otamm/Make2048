@@ -148,7 +148,8 @@ class Grid:CCNodeColor {
         var remove = CCActionRemove(); // removes tile that will give place to mergedTitle; last action to be executed in a sequence which will be passed to mergedTitle.
         
         var mergeTile = CCActionCallBlock(block: { () -> Void in
-            otherTile.value *= 2
+            otherTile.value *= 2;
+            otherTile.mergedThisRound = true; // indicates that otherTile was produced from a merge.
         }); // sets a closure which will update the tile's current value to 2*(tile's current value);
         /*var checkWin = CCActionCallBlock(block: { () -> Void in
             if otherTile.value == self.winTile {self.win()}
@@ -159,6 +160,16 @@ class Grid:CCNodeColor {
         mergedTile.runAction(sequence); // runs the sequence of actions at the tile currently positioned at the index which will give place to the merged tile
     }
     
+    // a "change state" method to be triggered whenever any tile changes its position in the grid.
+    func nextRound() {
+        self.spawnRandomTile(); // spawns a random title in an unnocupied spot
+        // sets all tiles' mergedThisRound property to false so any tile that resulted from a merge can merge once again.
+        for column in self.gridArray {
+            for tile in column {
+                tile?.mergedThisRound = false;
+            }
+        }
+    }
     /* iOS methods */
     
     /****** SWIPE METHODS *****/
@@ -217,7 +228,7 @@ class Grid:CCNodeColor {
                         var otherTileY = newY + Int(direction.y);
                         if let otherTile = self.gridArray[otherTileX][otherTileY] {
                             // compare the value of other tile and also check if the other tile has been merged this round
-                            if (tile.value == otherTile.value) {
+                            if (tile.value == otherTile.value && !otherTile.mergedThisRound) {
                                 self.mergeTilesAtindex(currentX, y: currentY, withTileAtIndex: otherTileX, y: otherTileY);
                                 movedTilesThisRound = true; // will spawn other tile
                             } else {
