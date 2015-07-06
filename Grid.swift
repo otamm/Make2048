@@ -30,7 +30,7 @@ class Grid:CCNodeColor {
     var tileMarginVertical: CGFloat = 0;
     var tileMarginHorizontal: CGFloat = 0;
     // the player wins when s/he reaches a tile with a value of winTile;
-    let winTile = 16;
+    let winTile = 1600;
     
     /* custom methods */
     

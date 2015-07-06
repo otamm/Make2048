@@ -24,6 +24,12 @@ class MainScene: CCNode {
         self.updateHighscore(); // updates highScoreLabel when game is loaded.
     }
     
+    // triggered by restart button. Reloads main scene, restarting the game.  Updates highScore if that's the case.
+    func restart() {
+        var mainScene = CCBReader.loadAsScene("MainScene");
+        CCDirector.sharedDirector().presentScene(mainScene);
+    }
+    
     /* iOS methods */
     
     // method is called whenever an observed object signalizes a change.
