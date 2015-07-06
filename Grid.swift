@@ -27,6 +27,8 @@ class Grid:CCNodeColor {
     var columnHeight: CGFloat = 0;
     var tileMarginVertical: CGFloat = 0;
     var tileMarginHorizontal: CGFloat = 0;
+    // the player wins when s/he reaches a tile with a value of 2^(winTile);
+    let winTile = 8;
     
     /* custom methods */
     
@@ -159,12 +161,13 @@ class Grid:CCNodeColor {
             otherTile.mergedThisRound = true; // indicates that otherTile was produced from a merge.
             self.score += otherTile.value;
         }); // sets a closure which will update the tile's current value to 2*(tile's current value);
-        /*var checkWin = CCActionCallBlock(block: { () -> Void in
-            if otherTile.value == self.winTile {self.win()}
-        });*/
+        var checkWin = CCActionCallBlock(block: { () -> Void in
+            if (otherTile.value == self.winTile) {
+                self.win();
+            }
+        }); // checks wheter the tile formed has a value of 2 ^ (winTile).
         //sets up a sequence of actions to be executed;
-        //var sequence = CCActionSequence(array: [moveTo, mergeTile, checkWin, remove]);
-        var sequence = CCActionSequence(array: [moveTo, mergeTile, remove]);
+        var sequence = CCActionSequence(array: [moveTo, mergeTile, checkWin, remove]);
         mergedTile.runAction(sequence); // runs the sequence of actions at the tile currently positioned at the index which will give place to the merged tile
     }
     
@@ -178,6 +181,17 @@ class Grid:CCNodeColor {
             }
         }
     }
+    
+    // will display a specific message (encapsulated action, will be used with different parameter in win/lose scenarios)
+    func endGameWithMessage(message: String) {
+        println(message)
+    }
+    
+    // triggered when detected that the player has won the game.
+    func win() {
+        self.endGameWithMessage("You win!")
+    }
+    
     /* iOS methods */
     
     /****** SWIPE METHODS *****/
