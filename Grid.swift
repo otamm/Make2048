@@ -30,7 +30,7 @@ class Grid:CCNodeColor {
     var tileMarginVertical: CGFloat = 0;
     var tileMarginHorizontal: CGFloat = 0;
     // the player wins when s/he reaches a tile with a value of winTile;
-    let winTile = 2048;
+    let winTile = 16;
     
     /* custom methods */
     
@@ -215,12 +215,19 @@ class Grid:CCNodeColor {
     
     // will display a specific message (encapsulated action, will be used with different parameter in win/lose scenarios)
     func endGameWithMessage(message: String) {
-        println(message);
+        //println(message);
+        // loads GameEnd screen as a GameEnd class instance. Positions the screen to the center of the current screen and makes sure the screen is displayed above MainScreen.
+        var gameEndPopover = CCBReader.load("GameEnd") as! GameEnd;
+        gameEndPopover.positionType = CCPositionType(xUnit: .Normalized, yUnit: .Normalized, corner: .BottomLeft);
+        gameEndPopover.position = ccp(0.5, 0.5);
+        gameEndPopover.zOrder = Int.max;
+        gameEndPopover.setMessage(message, score: self.score);
+        self.addChild(gameEndPopover);
         // interface to store key-val info about the user in a more persistent way.
         let defaults = NSUserDefaults.standardUserDefaults();
         var highscore = defaults.integerForKey("highscore");
         if self.score > highscore {
-            defaults.setInteger(score, forKey: "highscore");
+            defaults.setInteger(self.score, forKey: "highscore");
         }
     }
     
