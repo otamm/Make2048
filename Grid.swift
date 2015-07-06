@@ -216,6 +216,12 @@ class Grid:CCNodeColor {
     // will display a specific message (encapsulated action, will be used with different parameter in win/lose scenarios)
     func endGameWithMessage(message: String) {
         println(message);
+        // interface to store key-val info about the user in a more persistent way.
+        let defaults = NSUserDefaults.standardUserDefaults();
+        var highscore = defaults.integerForKey("highscore");
+        if self.score > highscore {
+            defaults.setInteger(score, forKey: "highscore");
+        }
     }
     
     // triggered when detected that the player has won the game.
