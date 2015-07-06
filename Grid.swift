@@ -27,8 +27,8 @@ class Grid:CCNodeColor {
     var columnHeight: CGFloat = 0;
     var tileMarginVertical: CGFloat = 0;
     var tileMarginHorizontal: CGFloat = 0;
-    // the player wins when s/he reaches a tile with a value of 2^(winTile);
-    let winTile = 8;
+    // the player wins when s/he reaches a tile with a value of winTile;
+    let winTile = 4;
     
     /* custom methods */
     
@@ -174,6 +174,10 @@ class Grid:CCNodeColor {
     // a "change state" method to be triggered whenever any tile changes its position in the grid.
     func nextRound() {
         self.spawnRandomTile(); // spawns a random title in an unnocupied spot
+        // checks if it is possible to make a next move; if it isn't, player loses.
+        if !(self.movePossible()) {
+            self.lose();
+        }
         // sets all tiles' mergedThisRound property to false so any tile that resulted from a merge can merge once again.
         for column in self.gridArray {
             for tile in column {
@@ -189,9 +193,43 @@ class Grid:CCNodeColor {
     
     // triggered when detected that the player has won the game.
     func win() {
-        self.endGameWithMessage("You win!")
+        self.endGameWithMessage("You win!");
     }
     
+    // triggered when detected that there are no available spaces (player loses)
+    func lose() {
+        self.endGameWithMessage("You lose!");
+    }
+    
+    // if index is valid aand there's a tile at that index, the tile at the index is returned. Otherwise, 'nil' is returned.
+    func tileForIndex(x: Int, y: Int) -> Tile? {
+        return self.indexValid(x, y: y) ? self.gridArray[x][y] : self.noTile;
+    }
+    
+    // iterates over grid, returns 'true' as soon as an empty space is detected. If no spaces are available, returns 'false'
+    func movePossible() -> Bool {
+        for i in 0..<self.gridSize {
+            for j in 0..<self.gridSize {
+                if let tile = self.gridArray[i][j] {
+                    var topNeighbor = self.tileForIndex(i, y: j+1);
+                    var bottomNeighbor = self.tileForIndex(i, y: j-1);
+                    var leftNeighbor = self.tileForIndex(i-1, y: j);
+                    var rightNeighbor = self.tileForIndex(i+1, y: j);
+                    var neighbors = [topNeighbor, bottomNeighbor, leftNeighbor, rightNeighbor];
+                    for neighbor in neighbors {
+                        if let neighborTile = neighbor {
+                            if (neighborTile.value == tile.value) {
+                                return true;
+                            }
+                        }
+                    }
+                } else { // empty space on the grid
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
     /* iOS methods */
     
     /****** SWIPE METHODS *****/
