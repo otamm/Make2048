@@ -13,6 +13,8 @@ class Grid:CCNodeColor {
     // array of tile instances arrays; represents the main game grid. Space can or cannot have a tile on it.
     var gridArray = [[Tile?]]();
     var noTile:Tile? = nil;
+    // keeps track of indexes of tiles merged in a given round.
+    var mergedThisRound = [[Int]]();
     let gridSize = 4;
     //keeps track of current score for this game session. Incremented at each merge with the label value of the tile produced from the merge. Automatically updates MainScene's scoreLabel when a new value is set.
     var score:Int = 0 {
@@ -28,7 +30,7 @@ class Grid:CCNodeColor {
     var tileMarginVertical: CGFloat = 0;
     var tileMarginHorizontal: CGFloat = 0;
     // the player wins when s/he reaches a tile with a value of winTile;
-    let winTile = 4;
+    let winTile = 2048;
     
     /* custom methods */
     
@@ -72,7 +74,7 @@ class Grid:CCNodeColor {
     // adds tile to specific space
     func addTileAtColumn(column: Int, row: Int) {
         var tile = CCBReader.load("Tile") as! Tile; // loads tile and stores it locally
-        self.gridArray[column][row] = tile; // appends it to gridArray
+        self.gridArray[column][row] = tile; // sets value at gridArray[column][row] from nil to Tile
         tile.scale = 0; // sets tile's scale to 0 as a maneuver to make tile appear with a 'scale up' animation
         self.addChild(tile);
         tile.position = self.positionForColumn(column, row: row);
@@ -125,13 +127,22 @@ class Grid:CCNodeColor {
     // returns 'true' if the index is inside the grid/does not contain a Tile object and 'false' otherwise.
     func indexValidAndUnoccupied(x: Int, y: Int) -> Bool {
         var indexValid = self.indexValid(x, y: y);
-        if !indexValid {
+        if !(indexValid) {
             return false;
         }
         // unoccupied?
         return self.gridArray[x][y] == self.noTile;
     }
     
+    // returns 'true' if the index was the result of a merge which happened this same round and 'false' otherwise
+    func isMerged(x: Int, y: Int) -> Bool {
+        for moves in self.mergedThisRound {
+            if (moves == [x,y]) {
+                return true;
+            }
+        }
+        return false;
+    }
     // receives the Tile instance to be moved, its starting point and its finish point.
     func moveTile(tile: Tile, fromX: Int, fromY: Int, toX: Int, toY: Int) {
         
@@ -159,6 +170,7 @@ class Grid:CCNodeColor {
         var mergeTile = CCActionCallBlock(block: { () -> Void in
             otherTile.value *= 2;
             otherTile.mergedThisRound = true; // indicates that otherTile was produced from a merge.
+            self.mergedThisRound.append([otherX, otherY]);
             self.score += otherTile.value;
         }); // sets a closure which will update the tile's current value to 2*(tile's current value);
         var checkWin = CCActionCallBlock(block: { () -> Void in
@@ -171,42 +183,12 @@ class Grid:CCNodeColor {
         mergedTile.runAction(sequence); // runs the sequence of actions at the tile currently positioned at the index which will give place to the merged tile
     }
     
-    // a "change state" method to be triggered whenever any tile changes its position in the grid.
-    func nextRound() {
-        self.spawnRandomTile(); // spawns a random title in an unnocupied spot
-        // checks if it is possible to make a next move; if it isn't, player loses.
-        if !(self.movePossible()) {
-            self.lose();
-        }
-        // sets all tiles' mergedThisRound property to false so any tile that resulted from a merge can merge once again.
-        for column in self.gridArray {
-            for tile in column {
-                tile?.mergedThisRound = false;
-            }
-        }
-    }
-    
-    // will display a specific message (encapsulated action, will be used with different parameter in win/lose scenarios)
-    func endGameWithMessage(message: String) {
-        println(message)
-    }
-    
-    // triggered when detected that the player has won the game.
-    func win() {
-        self.endGameWithMessage("You win!");
-    }
-    
-    // triggered when detected that there are no available spaces (player loses)
-    func lose() {
-        self.endGameWithMessage("You lose!");
-    }
-    
     // if index is valid aand there's a tile at that index, the tile at the index is returned. Otherwise, 'nil' is returned.
     func tileForIndex(x: Int, y: Int) -> Tile? {
         return self.indexValid(x, y: y) ? self.gridArray[x][y] : self.noTile;
     }
     
-    // iterates over grid, returns 'true' as soon as an empty space is detected. If no spaces are available, returns 'false'
+    // iterates over grid, returns 'true' as soon as an empty space OR a mergeable tile is detected. If no spaces are available, returns 'false'
     func movePossible() -> Bool {
         for i in 0..<self.gridSize {
             for j in 0..<self.gridSize {
@@ -230,6 +212,43 @@ class Grid:CCNodeColor {
         }
         return false;
     }
+    
+    // will display a specific message (encapsulated action, will be used with different parameter in win/lose scenarios)
+    func endGameWithMessage(message: String) {
+        println(message);
+    }
+    
+    // triggered when detected that the player has won the game.
+    func win() {
+        self.endGameWithMessage("You win!");
+    }
+    
+    // triggered when detected that there are no available spaces (player loses)
+    func lose() {
+        self.endGameWithMessage("You lose!");
+    }
+    
+    // a "change state" method to be triggered whenever any tile changes its position in the grid.
+    func nextRound() {
+        self.spawnRandomTile(); // spawns a random title in an unnocupied spot
+        // sets all tiles' mergedThisRound property to false so any tile that resulted from a merge can merge once again.
+        /*for column in self.gridArray {
+            for tile in column {
+                //if (tile != nil) {
+                    tile?.mergedThisRound = false;
+                //}
+            }
+        }*/
+        for merged in self.mergedThisRound {
+            self.gridArray[merged[0]][merged[1]]?.mergedThisRound = false;
+        }
+        // checks if it is possible to make a next move; if it isn't, player loses.
+        if !(self.movePossible()) {
+            self.lose();
+        }
+        //self.mergedThisRound = [];
+    }
+    
     /* iOS methods */
     
     /****** SWIPE METHODS *****/
@@ -286,9 +305,11 @@ class Grid:CCNodeColor {
                         // get the other tile
                         var otherTileX = newX + Int(direction.x);
                         var otherTileY = newY + Int(direction.y);
+                        //var isMerged = self.isMerged(otherTileX, y: otherTileY);
                         if let otherTile = self.gridArray[otherTileX][otherTileY] {
                             // compare the value of other tile and also check if the other tile has been merged this round
-                            if (tile.value == otherTile.value && !otherTile.mergedThisRound) {
+                            if (tile.value == otherTile.value && !(otherTile.mergedThisRound)) {
+                            //if ((tile.value == otherTile.value) && !(self.isMerged(otherTileX, y: otherTileY))) {
                                 self.mergeTilesAtindex(currentX, y: currentY, withTileAtIndex: otherTileX, y: otherTileY);
                                 movedTilesThisRound = true; // will spawn other tile
                             } else {
@@ -317,7 +338,7 @@ class Grid:CCNodeColor {
         }
         // if any movement resulted from the swipe, a random tile is spawned at a random unnocupied location.
         if (movedTilesThisRound) {
-            self.spawnRandomTile();
+            self.nextRound();
         }
     }
     

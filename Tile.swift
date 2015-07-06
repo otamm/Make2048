@@ -31,5 +31,6 @@ class Tile:CCNode {
     /* cocos2d methods */
     func didLoadFromCCB() {
         self.value = (Int(arc4random_uniform(UInt32(2))) + 1) * 2; // generates either 2 or 4; arc4random_uniform() will generate either 0 or 1,then 1 is added to it and the result is multiplied by 2.
+        //value = Int(CCRANDOM_MINUS1_1() * 201) + 201
     }
 }
